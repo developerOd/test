@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <title>Splash Cursor</title>
   <style>
     html, body {
       margin: 0; padding: 0; overflow: hidden;
@@ -17,17 +18,18 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
-
   <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
   <script>
+    // resize canvas
     const canvas = document.getElementById('canvas');
-    function resize() {
-      canvas.width  = window.innerWidth;
-      canvas.height = window.innerHeight;
-    }
+    const resize = () => {
+      canvas.width  = innerWidth;
+      canvas.height = innerHeight;
+    };
     window.addEventListener('resize', resize);
     resize();
 
+    // init fluid
     const sim = WebGLFluid(canvas, {
       SIM_RESOLUTION:      128,
       DYE_RESOLUTION:      1440,
@@ -47,17 +49,19 @@
       IMMEDIATE:           false
     });
 
-    // Instead of direct pointer listeners, we handle parent→iframe messages:
-    window.addEventListener('message', e => {
-      const d = e.data;
-      if (!d || !d.type) return;
-      if (d.type === 'move') {
-        // d.x, d.y, d.dx, d.dy
-        sim.splat(d.x, d.y, d.dx * 5, d.dy * 5);
-      }
-      else if (d.type === 'down') {
-        sim.splat(d.x, d.y, 0, 0);
-      }
+    // pointer splats
+    let lastX = null, lastY = null, TH = 10;
+    document.addEventListener('pointermove', e => {
+      const r = canvas.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      if (lastX!==null && Math.hypot(x-lastX,y-lastY)<TH) return;
+      const dx = x-(lastX||x), dy = y-(lastY||y);
+      lastX = x; lastY = y;
+      sim.splat(x, y, dx*5, dy*5);
+    });
+    document.addEventListener('pointerdown', e => {
+      const r = canvas.getBoundingClientRect();
+      sim.splat(e.clientX - r.left, e.clientY - r.top, 0, 0);
     });
   <\/script>
 </body>
