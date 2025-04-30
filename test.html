@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>Splash Cursor</title>
   <style>
-    /* Make the iframe’s document fully transparent */
+    /* Сделать фон полностью прозрачным */
     html, body {
       margin: 0;
       padding: 0;
@@ -21,8 +21,11 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
+
+  <!-- 1) Подключаем UMD-бандл -->
   <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
   <script>
+    // 2) Подгоняем размер
     const canvas = document.getElementById('canvas');
     function resize() {
       canvas.width  = window.innerWidth;
@@ -31,6 +34,7 @@
     window.addEventListener('resize', resize);
     resize();
 
+    // 3) Инициализируем fluid (без авто-сплэшей)
     const sim = WebGLFluid(canvas, {
       SIM_RESOLUTION:      128,
       DYE_RESOLUTION:      1440,
@@ -50,20 +54,22 @@
       IMMEDIATE:           false
     });
 
+    // 4) Фильтрация микродвижений и сам сплэш
     let lastX = null, lastY = null;
     const TH = 10;
     document.addEventListener('pointermove', e => {
       const r = canvas.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
-      if (lastX!==null && Math.hypot(x-lastX,y-lastY)<TH) return;
-      const dx = x-(lastX||x), dy = y-(lastY||y);
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      if (lastX !== null && Math.hypot(x - lastX, y - lastY) < TH) return;
+      const dx = x - (lastX ?? x), dy = y - (lastY ?? y);
       lastX = x; lastY = y;
-      sim.splat(x, y, dx*5, dy*5);
+      sim.splat(x, y, dx * 5, dy * 5);
     });
     document.addEventListener('pointerdown', e => {
       const r = canvas.getBoundingClientRect();
-      sim.splat(e.clientX - r.left, e.clientY - r.top, 0,0);
+      sim.splat(e.clientX - r.left, e.clientY - r.top, 0, 0);
     });
-  <\/script>
+  </script>
 </body>
 </html>
