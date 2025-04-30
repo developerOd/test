@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Splash Cursor</title>
@@ -8,8 +8,8 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      cursor: none;
-      background: #000; /* или transparent */
+      cursor: none;         /* hide native cursor */
+      background: transparent;
     }
     canvas {
       display: block;
@@ -20,10 +20,11 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
-  <!-- 1) Берем проверенную версию UMD-бандла -->
+
+  <!-- 1) UMD bundle; this must run in the iframe -->
   <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
   <script>
-    // 2) Resize
+    // 2) Resize handler
     const canvas = document.getElementById('canvas');
     function resize() {
       canvas.width  = window.innerWidth;
@@ -32,7 +33,7 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // 3) Инициализируем без авто-сплэшей
+    // 3) Init the fluid WITHOUT auto-splats
     const sim = WebGLFluid(canvas, {
       SIM_RESOLUTION:      128,
       DYE_RESOLUTION:      1440,
@@ -40,33 +41,32 @@
       DENSITY_DISSIPATION: 3.5,
       VELOCITY_DISSIPATION:2,
       PRESSURE:            0.1,
-      PRESSURE_ITERATIONS: 20,
+      PRESSURE_ITERATIONS:20,
       CURL:                3,
       SPLAT_RADIUS:        0.2,
       SPLAT_FORCE:         6000,
       COLOR_UPDATE_SPEED:  10,
-      BACK_COLOR:          { r: 0.5, g: 0, b: 0 },
+      BACK_COLOR:          { r:0.5, g:0, b:0 },
       TRANSPARENT:         true,
       SHADING:             true,
       AUTO:                false,
       IMMEDIATE:           false
     });
 
-    // 4) Простая фильтрация micro-движений
+    // 4) Pointer filtering & splats
     let lastX = null, lastY = null;
     const TH = 10;
     document.addEventListener('pointermove', e => {
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
-      if (lastX !== null && Math.hypot(x - lastX, y - lastY) < TH) return;
-      const dx = x - (lastX ?? x), dy = y - (lastY ?? y);
+      const r = canvas.getBoundingClientRect();
+      const x = e.clientX - r.left, y = e.clientY - r.top;
+      if ( lastX!==null && Math.hypot(x-lastX,y-lastY)<TH ) return;
+      const dx = x-(lastX||x), dy = y-(lastY||y);
       lastX = x; lastY = y;
-      sim.splat(x, y, dx*5, dy*5);
+      sim.splat(x,y,dx*5,dy*5);
     });
     document.addEventListener('pointerdown', e => {
-      const rect = canvas.getBoundingClientRect();
-      sim.splat(e.clientX - rect.left, e.clientY - rect.top, 0, 0);
+      const r = canvas.getBoundingClientRect();
+      sim.splat(e.clientX - r.left, e.clientY - r.top, 0,0);
     });
   </script>
 </body>
