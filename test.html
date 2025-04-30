@@ -2,67 +2,84 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Splash Cursor</title>
+  <title>🔧 Splash Debug</title>
   <style>
     html, body {
-      margin: 0; padding: 0; overflow: hidden;
-      cursor: none;
+      margin:0; padding:0; overflow:hidden;
       background: transparent !important;
+      cursor: none;
     }
-    canvas {
-      display: block;
-      width: 100vw;
-      height: 100vh;
-    }
+    canvas { display:block; width:100vw; height:100vh; }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
+
+  <script>console.log('[SplashHTML] Loaded');</script>
   <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
   <script>
-    // resize canvas
-    const canvas = document.getElementById('canvas');
-    const resize = () => {
-      canvas.width  = innerWidth;
-      canvas.height = innerHeight;
-    };
-    window.addEventListener('resize', resize);
-    resize();
+    console.log('[SplashHTML] After UMD load, WebGLFluid =', typeof WebGLFluid);
 
-    // init fluid
-    const sim = WebGLFluid(canvas, {
-      SIM_RESOLUTION:      128,
-      DYE_RESOLUTION:      1440,
-      CAPTURE_RESOLUTION:  512,
-      DENSITY_DISSIPATION: 3.5,
-      VELOCITY_DISSIPATION:2,
-      PRESSURE:            0.1,
-      PRESSURE_ITERATIONS:20,
-      CURL:                3,
-      SPLAT_RADIUS:        0.2,
-      SPLAT_FORCE:         6000,
-      COLOR_UPDATE_SPEED:  10,
-      BACK_COLOR:          { r:0.5, g:0, b:0 },
-      TRANSPARENT:         true,
-      SHADING:             true,
-      AUTO:                false,
-      IMMEDIATE:           false
-    });
+    // Если здесь undefined, попробуем из другого CDN:
+    if (typeof WebGLFluid !== 'function') {
+      console.warn('[SplashHTML] WebGLFluid undefined → попробую unpkg');
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js';
+      s.onload = init;
+      document.head.appendChild(s);
+    } else {
+      init();
+    }
 
-    // pointer splats
-    let lastX = null, lastY = null, TH = 10;
-    document.addEventListener('pointermove', e => {
-      const r = canvas.getBoundingClientRect();
-      const x = e.clientX - r.left, y = e.clientY - r.top;
-      if (lastX!==null && Math.hypot(x-lastX,y-lastY)<TH) return;
-      const dx = x-(lastX||x), dy = y-(lastY||y);
-      lastX = x; lastY = y;
-      sim.splat(x, y, dx*5, dy*5);
-    });
-    document.addEventListener('pointerdown', e => {
-      const r = canvas.getBoundingClientRect();
-      sim.splat(e.clientX - r.left, e.clientY - r.top, 0, 0);
-    });
-  <\/script>
+    function init() {
+      console.log('[SplashHTML] Initializing fluid…');
+      const canvas = document.getElementById('canvas');
+      function resize() {
+        canvas.width  = innerWidth;
+        canvas.height = innerHeight;
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      // Проверим, что WebGLFluid реально существует
+      console.log('[SplashHTML] WebGLFluid now =', typeof WebGLFluid);
+
+      const sim = WebGLFluid(canvas, {
+        SIM_RESOLUTION:      128,
+        DYE_RESOLUTION:      1440,
+        CAPTURE_RESOLUTION:  512,
+        DENSITY_DISSIPATION: 3.5,
+        VELOCITY_DISSIPATION:2,
+        PRESSURE:            0.1,
+        PRESSURE_ITERATIONS:20,
+        CURL:                3,
+        SPLAT_RADIUS:        0.2,
+        SPLAT_FORCE:         6000,
+        COLOR_UPDATE_SPEED:  10,
+        BACK_COLOR:          { r:0.5, g:0, b:0 },
+        TRANSPARENT:         true,
+        SHADING:             true,
+        AUTO:                false,
+        IMMEDIATE:           false
+      });
+      console.log('[SplashHTML] sim created:', sim);
+
+      let lastX = null, lastY = null, TH = 10;
+      document.addEventListener('pointermove', e => {
+        const r = canvas.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        if (lastX!=null && Math.hypot(x-lastX,y-lastY)<TH) return;
+        const dx = x-(lastX||x), dy = y-(lastY||y);
+        lastX = x; lastY = y;
+        sim.splat(x, y, dx*5, dy*5);
+      });
+      document.addEventListener('pointerdown', e => {
+        const r = canvas.getBoundingClientRect();
+        sim.splat(e.clientX - r.left, e.clientY - r.top, 0,0);
+      });
+
+      console.log('[SplashHTML] Event listeners attached');
+    }
+  </script>
 </body>
 </html>
