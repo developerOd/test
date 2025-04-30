@@ -40,8 +40,8 @@
     // Detect Safari (or lack of float texture support) for fallback
     const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
     // Fallback: reduce resolution and disable shading
-    const SIM_RES      = isSafari ? 64   : 128;
-    const DYE_RES      = isSafari ? 720  : 1440;
+    const SIM_RES      = isSafari ? 32   : 128;
+    const DYE_RES      = isSafari ? 320  : 1440;
     const PRESSURE_IT  = isSafari ? 1    : 20;
     const SHADING_ON   = !isSafari;
     console.log('[SplashHTML] isSafari=', isSafari, 'SIM_RES=', SIM_RES, 'DYE_RES=', DYE_RES, 'PRESSURE_IT=', PRESSURE_IT, 'SHADING_ON=', SHADING_ON);
