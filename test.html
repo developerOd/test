@@ -1,85 +1,80 @@
+<!-- public/splash-cursor.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>🔧 Splash Debug</title>
+  <title>Splash Cursor Demo</title>
   <style>
+    /* Transparent background so underlying page shows through */
     html, body {
-      margin:0; padding:0; overflow:hidden;
-      background: transparent !important;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       cursor: none;
+      background: transparent !important;
     }
-    canvas { display:block; width:100vw; height:100vh; }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
   </style>
 </head>
 <body>
   <canvas id="canvas"></canvas>
 
-  <script>console.log('[SplashHTML] Loaded');</script>
+  <!-- Load the WebGL-Fluid UMD bundle -->
   <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
   <script>
-    console.log('[SplashHTML] After UMD load, WebGLFluid =', typeof WebGLFluid);
+    console.log('[SplashHTML] UMD loaded, WebGLFluid =', typeof WebGLFluid);
 
-    // Если здесь undefined, попробуем из другого CDN:
-    if (typeof WebGLFluid !== 'function') {
-      console.warn('[SplashHTML] WebGLFluid undefined → попробую unpkg');
-      var s = document.createElement('script');
-      s.src = 'https://unpkg.com/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js';
-      s.onload = init;
-      document.head.appendChild(s);
-    } else {
-      init();
+    // Resize canvas to full viewport
+    const canvas = document.getElementById('canvas');
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
     }
+    window.addEventListener('resize', resize);
+    resize();
 
-    function init() {
-      console.log('[SplashHTML] Initializing fluid…');
-      const canvas = document.getElementById('canvas');
-      function resize() {
-        canvas.width  = innerWidth;
-        canvas.height = innerHeight;
-      }
-      window.addEventListener('resize', resize);
-      resize();
+    // Initialize fluid on the canvas (no automatic splats)
+    WebGLFluid(canvas, {
+      SIM_RESOLUTION:      128,
+      DYE_RESOLUTION:      1440,
+      CAPTURE_RESOLUTION:  512,
+      DENSITY_DISSIPATION: 3.5,
+      VELOCITY_DISSIPATION:2,
+      PRESSURE:            0.1,
+      PRESSURE_ITERATIONS:20,
+      CURL:                3,
+      SPLAT_RADIUS:        0.2,
+      SPLAT_FORCE:         6000,
+      COLOR_UPDATE_SPEED:  10,
+      BACK_COLOR:          { r:0.5, g:0, b:0 },
+      TRANSPARENT:         true,
+      SHADING:             true,
+      AUTO:                false,
+      IMMEDIATE:           false
+    });
+    console.log('[SplashHTML] Fluid initialized');
 
-      // Проверим, что WebGLFluid реально существует
-      console.log('[SplashHTML] WebGLFluid now =', typeof WebGLFluid);
-
-      const sim = WebGLFluid(canvas, {
-        SIM_RESOLUTION:      128,
-        DYE_RESOLUTION:      1440,
-        CAPTURE_RESOLUTION:  512,
-        DENSITY_DISSIPATION: 3.5,
-        VELOCITY_DISSIPATION:2,
-        PRESSURE:            0.1,
-        PRESSURE_ITERATIONS:20,
-        CURL:                3,
-        SPLAT_RADIUS:        0.2,
-        SPLAT_FORCE:         6000,
-        COLOR_UPDATE_SPEED:  10,
-        BACK_COLOR:          { r:0.5, g:0, b:0 },
-        TRANSPARENT:         true,
-        SHADING:             true,
-        AUTO:                false,
-        IMMEDIATE:           false
+    // Forward messages from parent iframe into canvas events
+    window.addEventListener('message', e => {
+      const d = e.data;
+      if (!d || !d.type) return;
+      // Map message types to mouse event types
+      const map = { move: 'mousemove', down: 'mousedown', up: 'mouseup' };
+      const evtType = map[d.type];
+      if (!evtType) return;
+      const evt = new MouseEvent(evtType, {
+        bubbles: true,
+        cancelable: true,
+        clientX: d.x,
+        clientY: d.y
       });
-      console.log('[SplashHTML] sim created:', sim);
-
-      let lastX = null, lastY = null, TH = 10;
-      document.addEventListener('pointermove', e => {
-        const r = canvas.getBoundingClientRect();
-        const x = e.clientX - r.left, y = e.clientY - r.top;
-        if (lastX!=null && Math.hypot(x-lastX,y-lastY)<TH) return;
-        const dx = x-(lastX||x), dy = y-(lastY||y);
-        lastX = x; lastY = y;
-        sim.splat(x, y, dx*5, dy*5);
-      });
-      document.addEventListener('pointerdown', e => {
-        const r = canvas.getBoundingClientRect();
-        sim.splat(e.clientX - r.left, e.clientY - r.top, 0,0);
-      });
-
-      console.log('[SplashHTML] Event listeners attached');
-    }
+      canvas.dispatchEvent(evt);
+    });
+    console.log('[SplashHTML] Message listener attached');
   </script>
 </body>
 </html>
