@@ -1,0 +1,100 @@
+<!-- public/splash-cursor.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Splash Cursor Demo</title>
+  <style>
+    /* Transparent background to let underlying page show through */
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      cursor: none;
+      background: transparent !important;
+    }
+    canvas {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  will-change: transform;
+  transform: translateZ(0);
+}
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <!-- 1) Load WebGL-Fluid UMD bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/webgl-fluid@0.3.9/dist/webgl-fluid.umd.js"></script>
+  <script>
+    console.log('[SplashHTML] UMD loaded, WebGLFluid =', typeof WebGLFluid);
+
+    // Resize the canvas to full viewport
+    const canvas = document.getElementById('canvas');
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Detect Safari (or lack of float texture support) for fallback
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    // Fallback: reduce resolution and disable shading
+    const SIM_RES      = isSafari ? 64   : 128;
+    const DYE_RES      = isSafari ? 720  : 1440;
+    const PRESSURE_IT  = isSafari ? 1    : 20;
+    const SHADING_ON   = !isSafari;
+    console.log('[SplashHTML] isSafari=', isSafari, 'SIM_RES=', SIM_RES, 'DYE_RES=', DYE_RES, 'PRESSURE_IT=', PRESSURE_IT, 'SHADING_ON=', SHADING_ON);
+
+    // 2) Initialize fluid simulation
+    WebGLFluid(canvas, {
+      SIM_RESOLUTION:      SIM_RES,
+      DYE_RESOLUTION:      DYE_RES,
+      CAPTURE_RESOLUTION:  512,
+      DENSITY_DISSIPATION: 3.5,
+      VELOCITY_DISSIPATION:2,
+      PRESSURE:            0.1,
+      PRESSURE_ITERATIONS: PRESSURE_IT,
+      CURL:                3,
+      SPLAT_RADIUS:        0.2,
+      SPLAT_FORCE:         6000,
+      COLOR_UPDATE_SPEED:  10,
+      BACK_COLOR:          { r:0.5, g:0, b:0 },
+      TRANSPARENT:         true,
+      SHADING:             SHADING_ON,
+      AUTO:                false,
+      IMMEDIATE:           false
+    });
+    console.log('[SplashHTML] Fluid initialized with adjusted settings');
+
+    // 3) Forward pointer messages from parent into canvas events
+    // 3) Forward pointer messages from parent into canvas events with 10px threshold
+let _msgLastX = null, _msgLastY = null;
+const _msgThreshold = 15;
+window.addEventListener('message', e => {
+  const d = e.data;
+  if (!d || !d.type) return;
+  // For move messages, skip small movements
+  if (d.type === 'move') {
+    if (_msgLastX !== null && Math.hypot(d.x - _msgLastX, d.y - _msgLastY) < _msgThreshold) return;
+    _msgLastX = d.x;
+    _msgLastY = d.y;
+  }
+  // Map message types to mouse event types
+  const map = { move:'mousemove', down:'mousedown', up:'mouseup' };
+  const evtType = map[d.type];
+  if (!evtType) return;
+  const evt = new MouseEvent(evtType, {
+    bubbles: true,
+    cancelable: true,
+    clientX: d.x,
+    clientY: d.y
+  });
+  canvas.dispatchEvent(evt);
+});
+console.log('[SplashHTML] Message listener attached');
+  </script>
+</body>
+</html>
